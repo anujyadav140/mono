@@ -1,0 +1,18 @@
+# These files will be excluded from the Cloud Build context for Functions
+node_modules/
+.git/
+.github/
+.vscode/
+
+# Prevent npm ci from running with an out-of-sync lockfile
+package-lock.json
+npm-shrinkwrap.json
+
+# Optional: ignore TS sources if present
+src/
+tsconfig.json
+
+# Never upload local secrets
+.runtimeconfig.json
+.env
+.env.*

@@ -1,0 +1,76 @@
+{
+  "project_info": {
+    "project_number": "451747116331",
+    "project_id": "mono-moments",
+    "storage_bucket": "mono-moments.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:451747116331:android:71ee83dec5a634d423416e",
+        "android_client_info": {
+          "package_name": "com.example.mono"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "451747116331-0al2ulesdk4bho8p72629ubivjj6q1jn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYRyOs8i861Ot3uCQJd8YoGW0lCokn9Ak"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "451747116331-0al2ulesdk4bho8p72629ubivjj6q1jn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:451747116331:android:4a97e49475cc76f323416e",
+        "android_client_info": {
+          "package_name": "com.example.mono_moments"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "451747116331-cd8v99j7jknetaatrg8bgi5nc1g7f252.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mono_moments",
+            "certificate_hash": "287e312d3abc2d8e34f3287366df49fd83e3bcff"
+          }
+        },
+        {
+          "client_id": "451747116331-0al2ulesdk4bho8p72629ubivjj6q1jn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYRyOs8i861Ot3uCQJd8YoGW0lCokn9Ak"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "451747116331-0al2ulesdk4bho8p72629ubivjj6q1jn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
