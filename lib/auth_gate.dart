@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import 'pages/home_page.dart';
+import 'pages/itinerary_choice_page.dart';
 import 'pages/login_page.dart';
 
 class AuthGate extends StatelessWidget {
@@ -18,11 +18,11 @@ class AuthGate extends StatelessWidget {
           );
         }
         if (snapshot.hasData) {
-          return HomePage(user: null); // AuthGate doesn't have Google user, will use default name
+          // After auth, show itinerary choice first. HomePage expects Google user; pass null for Firebase user.
+          return const ItineraryChoicePage(user: null);
         }
         return const LoginPage();
       },
     );
   }
 }
-

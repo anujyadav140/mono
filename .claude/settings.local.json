@@ -3,7 +3,16 @@
     "allow": [
       "Bash(flutter analyze:*)",
       "Bash(flutter build:*)",
-      "Bash(flutter run:*)"
+      "Bash(flutter run:*)",
+      "WebFetch(domain:firebase.google.com)",
+      "Bash(flutter:*)",
+      "WebFetch(domain:pub.dev)",
+      "Bash(git checkout:*)",
+      "Bash(copy:*)",
+      "Bash(claude-code update)",
+      "Bash(npx:*)",
+      "Bash(winget upgrade:*)",
+      "Bash(winget search:*)"
     ],
     "deny": [],
     "ask": []

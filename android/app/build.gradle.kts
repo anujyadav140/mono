@@ -46,6 +46,8 @@ dependencies {
     
     // Firebase Auth
     implementation("com.google.firebase:firebase-auth")
+
+    // App Check removed per request; ensure Functions work without it
 }
 
 flutter {

@@ -59,7 +59,9 @@ dependencies:
   google_fonts: ^6.2.1
   flutter_animate: ^4.5.0
   firebase_ai:
-
+  share_plus: ^11.1.0
+  pdf: ^3.11.3
+  path_provider: ^2.1.4
 dev_dependencies:
   flutter_test:
     sdk: flutter

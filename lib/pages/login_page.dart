@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:mono/pages/home_page.dart';
+import 'package:mono/pages/itinerary_choice_page.dart';
 
 const String? kClientId = null;       // e.g. 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com' (optional)
 const String? kServerClientId = null; // e.g. 'YOUR_SERVER_CLIENT_ID.apps.googleusercontent.com' (optional)
 
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+  
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
@@ -27,65 +28,35 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _initGoogle() async {
     await _google.initialize(clientId: kClientId, serverClientId: kServerClientId);
-
-    _google.authenticationEvents.listen((event) {
-      if (!mounted) return;
-      switch (event) {
-        case GoogleSignInAuthenticationEventSignIn():
-          setState(() {
-            _error = null;
-          });
-          _signInToFirebase(event.user);
-          break;
-        case GoogleSignInAuthenticationEventSignOut():
-          // User signed out
-          break;
-      }
-    }, onError: (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e is GoogleSignInException
-            ? (e.code == GoogleSignInExceptionCode.canceled
-                ? 'Sign-in canceled'
-                : 'GoogleSignInException ${e.code}: ${e.description}')
-            : 'Error: $e';
-      });
-    });
-
-    // Restore session if possible.
-    _google.attemptLightweightAuthentication();
-  }
-
-  void _signInToFirebase(GoogleSignInAccount googleUser) {
-    // Just navigate - only use Google Sign In, no Firebase Auth integration
-    _navigateToHomeOnce(googleUser);
-  }
-
-  void _navigateToHomeOnce(GoogleSignInAccount user) {
-    if (_didNavigate || !mounted) return;
-    _didNavigate = true;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => HomePage(user: user)),
-    );
   }
 
   Future<void> _signIn() async {
+    if (_busy) return;
+    
     setState(() {
       _busy = true;
       _error = null;
     });
+
     try {
-      if (_google.supportsAuthenticate()) {
-        await _google.authenticate(); // Triggers native/web Google Sign-In
-        // On success, the auth event listener will navigate.
-      } else {
-        throw Exception('Unsupported platform for Google Sign-In');
+      final result = await _google.authenticate();
+      if (result != null && !_didNavigate) {
+        _didNavigate = true;
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => ItineraryChoicePage(user: result)),
+        );
+      } else if (result == null) {
+        setState(() {
+          _error = 'Sign-in was cancelled';
+          _busy = false;
+        });
       }
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _busy = false);
+      setState(() {
+        _error = 'Sign-in failed: ${e.toString()}';
+        _busy = false;
+      });
     }
   }
 
@@ -93,95 +64,342 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final screenSize = MediaQuery.of(context).size;
+    final fontScale = screenSize.width / 400; // Base width for scaling
 
     return Scaffold(
       backgroundColor: scheme.surface,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Card(
-              margin: const EdgeInsets.all(24),
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: scheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(32),
-                      ),
-                      child: Icon(Icons.travel_explore_rounded, size: 32, color: scheme.primary),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Welcome to Mono Moments',
-                      style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSurface),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Plan your perfect trip with AI-powered recommendations',
-                      style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 28),
-
-                    if (_error != null) ...[
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              scheme.primary.withValues(alpha: 0.8),
+              scheme.secondary.withValues(alpha: 0.6),
+              scheme.tertiary.withValues(alpha: 0.4),
+            ],
+          ),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                scheme.surface.withValues(alpha: 0.1),
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 60),
+                // Header content
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
                       Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          border: Border.all(color: Colors.red.shade200),
-                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline, color: Colors.red.shade600, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(_error!, style: TextStyle(color: Colors.red.shade700, fontSize: 14)),
-                            ),
-                          ],
+                        child: Icon(
+                          Icons.travel_explore,
+                          color: Colors.white,
+                          size: 48,
                         ),
-                      ),
+                      ).animate().scale(delay: 200.ms, duration: 300.ms),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Welcome to Mono Moments',
+                        textAlign: TextAlign.center,
+                        style: text.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          height: 1.1,
+                          fontSize: (text.headlineLarge?.fontSize ?? 32) * 0.7 * fontScale,
+                        ),
+                      ).animate().fadeIn(delay: 300.ms, duration: 300.ms).slideY(begin: 0.3),
                       const SizedBox(height: 16),
-                    ],
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: _busy ? null : _signIn,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _busy ? scheme.onSurface.withValues(alpha: 0.12) : scheme.primary,
+                      Text(
+                        'Your AI-powered travel companion for creating perfect 4-day adventures',
+                        textAlign: TextAlign.center,
+                        style: text.bodyLarge?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          height: 1.4,
+                          fontSize: (text.bodyLarge?.fontSize ?? 16) * 0.85 * fontScale,
                         ),
-                        child: _busy
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                                  SizedBox(width: 12),
-                                  Text('Signing in...'),
-                                ],
-                              )
-                            : const Text('Continue with Google'),
+                      ).animate().fadeIn(delay: 400.ms, duration: 300.ms).slideY(begin: 0.3),
+                      const SizedBox(height: 60),
+                    ],
+                  ),
+                ),
+                // Main content section
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 20),
+                    decoration: BoxDecoration(
+                      color: scheme.surface,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
                       ),
                     ),
-
-                    const SizedBox(height: 18),
-                    Text(
-                      'By continuing, you agree to our Terms of Service and Privacy Policy',
-                      style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                      textAlign: TextAlign.center,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                          Container(
+                            padding: const EdgeInsets.all(32),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white,
+                                  scheme.surfaceContainer.withValues(alpha: 0.5),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: scheme.outline.withValues(alpha: 0.1),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Get Started',
+                                  style: text.headlineMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: scheme.onSurface,
+                                    fontSize: (text.headlineMedium?.fontSize ?? 28) * 0.7 * fontScale,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Sign in to create your personalized travel experiences',
+                                  textAlign: TextAlign.center,
+                                  style: text.bodyMedium?.copyWith(
+                                    color: scheme.onSurface.withValues(alpha: 0.7),
+                                    fontSize: (text.bodyMedium?.fontSize ?? 14) * 0.85 * fontScale,
+                                  ),
+                                ),
+                                const SizedBox(height: 32),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: _busy ? null : _signIn,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: scheme.primary,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      elevation: 2,
+                                    ),
+                                    child: _busy
+                                        ? Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                'Signing you in...',
+                                                style: text.titleMedium?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                  fontSize: (text.titleMedium?.fontSize ?? 16) * 0.85 * fontScale,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(2),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Icon(
+                                                  Icons.login,
+                                                  color: scheme.primary,
+                                                  size: 18,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                'Continue with Google',
+                                                style: text.titleMedium?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                  fontSize: (text.titleMedium?.fontSize ?? 16) * 0.85 * fontScale,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                  ),
+                                ),
+                                if (_error != null) ...[
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.shade50,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.red.shade200),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.error_outline, color: Colors.red.shade600, size: 18),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _error!,
+                                            style: text.bodySmall?.copyWith(
+                                              color: Colors.red.shade600,
+                                              fontSize: (text.bodySmall?.fontSize ?? 12) * 0.85 * fontScale,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ).animate().fadeIn(duration: 200.ms).shake(),
+                                ],
+                              ],
+                            ),
+                          ).animate().fadeIn(delay: 500.ms, duration: 300.ms).slideY(begin: 0.3),
+                          const SizedBox(height: 40),
+                          // Features preview
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: scheme.surfaceContainer.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: scheme.outline.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.blue.shade400,
+                                            Colors.purple.shade400,
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'AI-Powered Planning',
+                                            style: text.titleSmall?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: scheme.onSurface,
+                                              fontSize: (text.titleSmall?.fontSize ?? 14) * 0.85 * fontScale,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Personalized recommendations based on your preferences',
+                                            style: text.bodySmall?.copyWith(
+                                              color: scheme.onSurface.withValues(alpha: 0.7),
+                                              fontSize: (text.bodySmall?.fontSize ?? 12) * 0.85 * fontScale,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.green.shade400,
+                                            Colors.teal.shade400,
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(Icons.schedule, color: Colors.white, size: 16),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '4-Day Perfect Itineraries',
+                                            style: text.titleSmall?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: scheme.onSurface,
+                                              fontSize: (text.titleSmall?.fontSize ?? 14) * 0.85 * fontScale,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Detailed day-by-day plans with local insights',
+                                            style: text.bodySmall?.copyWith(
+                                              color: scheme.onSurface.withValues(alpha: 0.7),
+                                              fontSize: (text.bodySmall?.fontSize ?? 12) * 0.85 * fontScale,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ).animate().fadeIn(delay: 600.ms, duration: 300.ms).slideY(begin: 0.3),
+                        ],
+                        ),
+                      ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
