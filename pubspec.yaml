@@ -54,6 +54,7 @@ dependencies:
   # Location services
   location: ^6.0.2
   cloud_functions: 
+  cloud_firestore: 
   
   # Modern UI components and styling
   google_fonts: ^6.2.1

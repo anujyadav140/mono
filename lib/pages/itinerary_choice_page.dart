@@ -4,6 +4,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mono/pages/home_page.dart';
 import 'package:mono/pages/group_itinerary_page.dart';
 import 'package:mono/pages/login_page.dart';
+import 'package:mono/widgets/friend_request_listener.dart';
+import 'package:mono/pages/friend_requests_page.dart';
 
 class ItineraryChoicePage extends StatelessWidget {
   final GoogleSignInAccount? user;
@@ -90,6 +92,17 @@ class ItineraryChoicePage extends StatelessWidget {
                         onPressed: () => _logout(context),
                       ).animate().fadeIn(delay: 100.ms, duration: 200.ms).scale(begin: const Offset(0.8, 0.8)),
                     ],
+                  ),
+                ),
+                // Requests banner
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: FriendRequestListener(
+                    onViewRequests: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const FriendRequestsPage()),
+                      );
+                    },
                   ),
                 ),
                 // Header content

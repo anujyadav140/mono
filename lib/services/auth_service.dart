@@ -1,8 +1,17 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  static bool _googleInitialized = false;
+
+  Future<void> _ensureGoogleInitialized() async {
+    if (_googleInitialized) return;
+    await GoogleSignIn.instance.initialize();
+    _googleInitialized = true;
+  }
 
   User? get currentUser => _auth.currentUser;
 
@@ -13,14 +22,28 @@ class AuthService {
       final googleProvider = GoogleAuthProvider();
       googleProvider.addScope('email');
       googleProvider.addScope('profile');
-      
+
       if (kIsWeb) {
-        // Web implementation with popup
+        // Web: use popup to avoid redirect/session issues
         googleProvider.setCustomParameters({'prompt': 'select_account'});
         return await _auth.signInWithPopup(googleProvider);
       } else {
-        // Mobile implementation - this shows native account picker
-        return await _auth.signInWithProvider(googleProvider);
+        // Android/iOS: FORCE native Google account chooser (stay in app).
+        await _ensureGoogleInitialized();
+        final account = await GoogleSignIn.instance
+            .authenticate()
+            .timeout(const Duration(seconds: 45));
+        final idToken = account.authentication.idToken;
+        if (idToken == null || idToken.isEmpty) {
+          throw FirebaseAuthException(
+            code: 'missing-id-token',
+            message: 'Google ID token was not returned',
+          );
+        }
+        final credential = GoogleAuthProvider.credential(idToken: idToken);
+        return await _auth
+            .signInWithCredential(credential)
+            .timeout(const Duration(seconds: 45));
       }
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -30,6 +53,9 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {}
     await _auth.signOut();
   }
 

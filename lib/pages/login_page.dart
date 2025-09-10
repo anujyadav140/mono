@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:mono/services/user_service.dart';
+import 'package:mono/services/auth_service.dart';
 import 'package:mono/pages/itinerary_choice_page.dart';
 
 const String? kClientId = null;       // e.g. 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com' (optional)
@@ -14,7 +16,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final GoogleSignIn _google = GoogleSignIn.instance;
+  final GoogleSignIn _google = GoogleSignIn.instance; // kept for possible future use
 
   bool _busy = false;
   String? _error;
@@ -23,12 +25,10 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    _initGoogle();
+    // No GoogleSignIn init required when using FirebaseAuth provider flow.
   }
 
-  Future<void> _initGoogle() async {
-    await _google.initialize(clientId: kClientId, serverClientId: kServerClientId);
-  }
+  // Removed GoogleSignIn-based silent restore. AuthGate handles Firebase session.
 
   Future<void> _signIn() async {
     if (_busy) return;
@@ -39,24 +39,25 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final result = await _google.authenticate();
-      if (result != null && !_didNavigate) {
+      final cred = await AuthService().signInWithGoogle();
+      if (cred?.user != null && UserService.isSupported) {
+        await UserService.upsertFromFirebaseUser(cred!.user!);
+      }
+      // Navigate forward explicitly to avoid relying solely on stream rebuilds.
+      if (!_didNavigate && mounted && cred?.user != null) {
         _didNavigate = true;
-        if (!mounted) return;
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => ItineraryChoicePage(user: result)),
+          MaterialPageRoute(builder: (_) => const ItineraryChoicePage(user: null)),
         );
-      } else if (result == null) {
-        setState(() {
-          _error = 'Sign-in was cancelled';
-          _busy = false;
-        });
       }
     } catch (e) {
       setState(() {
         _error = 'Sign-in failed: ${e.toString()}';
-        _busy = false;
       });
+    } finally {
+      if (mounted) {
+        setState(() { _busy = false; });
+      }
     }
   }
 
